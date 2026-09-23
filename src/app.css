@@ -24,6 +24,19 @@ button:disabled { opacity: 0.45; cursor: default; }
 .btn.small { min-height: 32px; padding: 0 var(--space-3); font-size: var(--fs-hint); }
 .btn.danger { color: var(--danger); }
 
+/* Button hierarchy — three tiers, so the eye knows what matters:
+   1. .primary  filled     the one action that commits work (שמירה)
+   2. .btn      outlined   navigation and menus
+   3. .ghost    text only  reversible utilities (ביטול, חזרה) and row actions */
+.btn.ghost { border-color: transparent; background: none; color: var(--text-muted); }
+.btn.ghost:hover:not(:disabled) { background: var(--hover); color: var(--text); }
+.btn.ghost.danger { color: var(--danger); }
+.topbar .divider { width: 1px; align-self: stretch; margin: var(--space-2) var(--space-1); background: var(--line); }
+
+/* actions inside the panel read as actions, not as a value picker */
+.actions { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.actions .btn { flex: 1 1 auto; }
+
 .crumbs { font-size: var(--fs-hint); color: var(--text-muted); margin-bottom: var(--space-2); }
 .crumbs button { background: none; border: none; color: var(--primary); padding: 0 2px; font-size: var(--fs-hint); }
 

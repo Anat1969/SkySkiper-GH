@@ -4,6 +4,7 @@
 //   level          'building' | 'mass' | 'segment'
 //   selectedMass   'base' | 'body' | 'crown' | null
 //   selectedSegment number | null
+//   selectedTower  number | null   — when set, the other towers are ghosted
 //   colorMode      'mass' | 'use' | 'white'
 //   floorLines     boolean
 //   onPick(mass, segment)   called on double-click on a mass
@@ -21,7 +22,7 @@ const ACCENT = '#0F6E6E';
 const MUTED = '#D3D9DF';
 
 const TowerViewer = forwardRef(function TowerViewer(
-  { project, level = 'building', selectedMass = null, selectedSegment = null, colorMode = 'mass', floorLines = true, onPick },
+  { project, level = 'building', selectedMass = null, selectedSegment = null, selectedTower = null, colorMode = 'mass', floorLines = true, onPick },
   ref
 ) {
   const mountRef = useRef(null);
@@ -86,7 +87,7 @@ const TowerViewer = forwardRef(function TowerViewer(
       const p = new THREE.Vector2(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
       ray.setFromCamera(p, camera);
       const hit = ray.intersectObjects(group.children, false).find((h) => h.object.userData.mass);
-      if (hit && s.current.onPick) s.current.onPick(hit.object.userData.mass, hit.object.userData.segment);
+      if (hit && s.current.onPick) s.current.onPick(hit.object.userData.mass, hit.object.userData.segment, hit.object.userData.tower);
     };
     renderer.domElement.addEventListener('dblclick', onDbl);
 
@@ -128,9 +129,11 @@ const TowerViewer = forwardRef(function TowerViewer(
       geo.translate(0, sl.z0, 0);
 
       const inMass = !selectedMass || sl.mass === selectedMass;
-      const ghost = level !== 'building' && !inMass;
-      const segDim = level === 'segment' && sl.mass === selectedMass && sl.segment !== selectedSegment;
-      const picked = level === 'segment' && sl.mass === selectedMass && sl.segment === selectedSegment;
+      const inTower = selectedTower == null || sl.tower == null || sl.tower === selectedTower;
+      const ghost = level !== 'building' && (!inMass || !inTower);
+      const onIt = inMass && inTower;
+      const segDim = level === 'segment' && onIt && sl.segment !== selectedSegment;
+      const picked = level === 'segment' && onIt && sl.segment === selectedSegment;
 
       let color = colorMode === 'use' ? USE_COLORS[sl.use] || USE_COLORS.other : colorMode === 'white' ? '#F7F6F2' : MASS_COLORS[sl.mass];
       if (segDim) color = MUTED;
@@ -140,7 +143,7 @@ const TowerViewer = forwardRef(function TowerViewer(
         const mat = new THREE.MeshLambertMaterial({ color, transparent: opacity < 1, opacity, depthWrite: opacity === 1 });
         const mesh = new THREE.Mesh(geo, mat);
         mesh.castShadow = !ghost; mesh.receiveShadow = true;
-        mesh.userData = { mass: sl.mass === 'bridge' ? 'body' : sl.mass, segment: sl.segment };
+        mesh.userData = { mass: sl.mass === 'bridge' ? 'body' : sl.mass, segment: sl.segment, tower: sl.tower ?? 0 };
         group.add(mesh);
       }
       if (floorLines || sl.kind === 'void' || picked || ghost) {
@@ -156,19 +159,23 @@ const TowerViewer = forwardRef(function TowerViewer(
     controls.minDistance = 10;
     controls.maxDistance = Math.max(maxZ, sw, sd) * 6;
     if (!s.current.initialized) { setView('axon', true); s.current.initialized = true; }
-  }, [project, level, selectedMass, selectedSegment, colorMode, floorLines]);
+  }, [project, level, selectedMass, selectedSegment, selectedTower, colorMode, floorLines]);
 
   // frame the selected mass when entering it
   useEffect(() => {
     if (level === 'building' || !selectedMass) return;
     const box = new THREE.Box3();
-    s.current.group.children.forEach((c) => { if (c.userData.mass === selectedMass) box.expandByObject(c); });
+    s.current.group.children.forEach((c) => {
+      if (c.userData.mass !== selectedMass) return;
+      if (selectedTower != null && c.userData.tower !== selectedTower) return;
+      box.expandByObject(c);
+    });
     if (box.isEmpty()) return;
     const c = box.getCenter(new THREE.Vector3());
     const size = box.getSize(new THREE.Vector3()).length();
     const dir = s.current.camera.position.clone().sub(s.current.controls.target).normalize();
     s.current.animateTo(c.clone().add(dir.multiplyScalar(size * 1.6)), c);
-  }, [level, selectedMass]);
+  }, [level, selectedMass, selectedTower]);
 
   function setView(name, instant = false) {
     const { h, w } = s.current.bounds || { h: 100, w: 70 };

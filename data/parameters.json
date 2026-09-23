@@ -26,8 +26,8 @@
         "title": "מגרש",
         "subtitle": "גבולות המגרש וכיוון",
         "fields": [
-          { "key": "site.width", "label": "רוחב מגרש", "control": "slider", "min": 10, "max": 200, "step": 1, "default": 70, "unit": "מ׳", "hint": "קובע את כיסוי הקרקע" },
-          { "key": "site.depth", "label": "עומק מגרש", "control": "slider", "min": 10, "max": 200, "step": 1, "default": 60, "unit": "מ׳" },
+          { "key": "site.width", "label": "רוחב מגרש", "control": "slider", "min": 10, "max": 400, "step": 1, "default": 70, "unit": "מ׳", "hint": "קובע את כיסוי הקרקע" },
+          { "key": "site.depth", "label": "עומק מגרש", "control": "slider", "min": 10, "max": 400, "step": 1, "default": 60, "unit": "מ׳" },
           { "key": "site.north", "label": "כיוון צפון", "control": "slider", "min": 0, "max": 360, "step": 5, "default": 0, "unit": "°", "hint": "משמש בהמשך לחישוב צל" },
           { "key": "defaults.floorHeight", "label": "גובה קומה ברירת מחדל", "control": "slider", "min": 2.8, "max": 6, "step": 0.1, "default": 3.3, "unit": "מ׳", "hint": "כל גוש יורש ערך זה אם לא שונה" }
         ]
@@ -39,10 +39,10 @@
         "fields": [
           { "key": "towers.count", "label": "מספר מגדלים", "control": "segmented", "options": [1, 2, 3, 4], "default": 1 },
           { "key": "towers.layout", "label": "סידור", "control": "segmented", "options": [["row", "שורה"], ["diagonal", "אלכסון"], ["triangle", "משולש"], ["square", "ריבוע"]], "default": "row", "showIf": "towers.count>1" },
-          { "key": "towers.spacing", "label": "מרווח בין מגדלים", "control": "slider", "min": 8, "max": 60, "step": 1, "default": 24, "unit": "מ׳", "showIf": "towers.count>1", "hint": "מרחק בין מרכזי המגדלים" },
+          { "key": "towers.spacing", "label": "מרווח בין מגדלים", "control": "slider", "min": 8, "max": 150, "step": 1, "default": 24, "unit": "מ׳", "showIf": "towers.count>1", "hint": "מרחק בין מרכזי המגדלים" },
           { "key": "towers.bridge.enabled", "label": "גשר בין מגדלים", "control": "toggle", "default": false, "showIf": "towers.count>1" },
           { "key": "towers.bridge.floor", "label": "קומת הגשר", "control": "slider", "min": 1, "max": 100, "step": 1, "default": 20, "showIf": "towers.bridge.enabled" },
-          { "key": "towers.bridge.floors", "label": "גובה הגשר בקומות", "control": "slider", "min": 1, "max": 6, "step": 1, "default": 2, "showIf": "towers.bridge.enabled" }
+          { "key": "towers.bridge.floors", "label": "גובה הגשר בקומות", "control": "slider", "min": 1, "max": 12, "step": 1, "default": 2, "showIf": "towers.bridge.enabled" }
         ]
       }
     ]
@@ -56,14 +56,14 @@
         "title": "צורה",
         "subtitle": "טביעת הרגל של הגוש",
         "fields": [
-          { "key": "footprint.shape", "label": "צורה", "control": "select", "options": [["rect", "מלבן"], ["ellipse", "עיגול / אליפסה"], ["polygon", "מצולע"], ["L", "L"], ["U", "U"], ["T", "T"], ["cross", "צלב"], ["triangle", "משולש"]], "default": "rect" },
-          { "key": "footprint.sides", "label": "מספר צלעות", "control": "slider", "min": 3, "max": 12, "step": 1, "default": 5, "showIf": "footprint.shape==polygon" },
-          { "key": "footprint.width", "label": "רוחב", "control": "slider", "min": 5, "max": 150, "step": 0.5, "default": 24, "unit": "מ׳" },
-          { "key": "footprint.depth", "label": "עומק", "control": "slider", "min": 5, "max": 150, "step": 0.5, "default": 24, "unit": "מ׳" },
+          { "key": "footprint.shape", "label": "צורה", "control": "select", "options": [["rect", "מלבן"], ["ellipse", "עיגול / אליפסה"], ["polygon", "מצולע"], ["L", "L"], ["U", "U"], ["T", "T"], ["H", "H"], ["cross", "צלב"], ["triangle", "משולש"]], "default": "rect" },
+          { "key": "footprint.sides", "label": "מספר צלעות", "control": "slider", "min": 3, "max": 24, "step": 1, "default": 5, "showIf": "footprint.shape==polygon" },
+          { "key": "footprint.width", "label": "רוחב", "control": "slider", "min": 3, "max": 200, "step": 0.5, "default": 24, "unit": "מ׳" },
+          { "key": "footprint.depth", "label": "עומק", "control": "slider", "min": 3, "max": 200, "step": 0.5, "default": 24, "unit": "מ׳" },
           { "key": "footprint.lockRatio", "label": "נעילת יחס", "control": "toggle", "default": false, "hint": "שינוי רוחב משנה גם עומק" },
-          { "key": "footprint.armRatio", "label": "עובי זרוע", "control": "slider", "min": 0.2, "max": 0.8, "step": 0.05, "default": 0.4, "unit": "×", "showIf": "footprint.shape in L,U,T,cross", "hint": "חלק מהרוחב" },
-          { "key": "footprint.cornerRadius", "label": "עיגול פינות", "control": "slider", "min": 0, "max": 15, "step": 0.5, "default": 0, "unit": "מ׳", "showIf": "footprint.shape==rect" },
-          { "key": "footprint.chamfer", "label": "חציבת פינה", "control": "slider", "min": 0, "max": 0.3, "step": 0.01, "default": 0, "unit": "×", "showIf": "footprint.shape==rect" }
+          { "key": "footprint.armRatio", "label": "עובי זרוע", "control": "slider", "min": 0.2, "max": 0.8, "step": 0.05, "default": 0.4, "unit": "×", "showIf": "footprint.shape in L,U,T,H,cross", "hint": "חלק מהרוחב" },
+          { "key": "footprint.cornerRadius", "label": "עיגול פינות", "control": "slider", "min": 0, "max": 40, "step": 0.5, "default": 0, "unit": "מ׳", "showIf": "footprint.shape==rect" },
+          { "key": "footprint.chamfer", "label": "חציבת פינה", "control": "slider", "min": 0, "max": 0.49, "step": 0.01, "default": 0, "unit": "×", "showIf": "footprint.shape==rect" }
         ]
       },
       {
@@ -73,10 +73,10 @@
         "subtitle": "יחס לגוש שמתחת",
         "fields": [
           { "key": "position.anchor", "label": "עיגון", "control": "anchor", "default": [0, 0], "hint": "מרכז, צד או פינה של הגוש שמתחת" },
-          { "key": "position.offsetX", "label": "היסט X", "control": "slider", "min": -50, "max": 50, "step": 0.5, "default": 0, "unit": "מ׳" },
-          { "key": "position.offsetY", "label": "היסט Y", "control": "slider", "min": -50, "max": 50, "step": 0.5, "default": 0, "unit": "מ׳" },
+          { "key": "position.offsetX", "label": "היסט X", "control": "slider", "min": -120, "max": 120, "step": 0.5, "default": 0, "unit": "מ׳" },
+          { "key": "position.offsetY", "label": "היסט Y", "control": "slider", "min": -120, "max": 120, "step": 0.5, "default": 0, "unit": "מ׳" },
           { "key": "position.rotation", "label": "סיבוב", "control": "slider", "min": 0, "max": 360, "step": 1, "default": 0, "unit": "°" },
-          { "key": "position.gapBelow", "label": "חלל מתחת", "control": "slider", "min": 0, "max": 15, "step": 0.5, "default": 0, "unit": "מ׳", "hint": "רווח פתוח בין הגושים" }
+          { "key": "position.gapBelow", "label": "חלל מתחת", "control": "slider", "min": 0, "max": 40, "step": 0.5, "default": 0, "unit": "מ׳", "hint": "רווח פתוח בין הגושים" }
         ]
       },
       {
@@ -85,8 +85,8 @@
         "title": "גובה",
         "subtitle": "קומות וגובה קומה",
         "fields": [
-          { "key": "height.floors", "label": "מספר קומות", "control": "slider", "min": 1, "max": 120, "step": 1, "default": 30 },
-          { "key": "height.floorHeight", "label": "גובה קומה", "control": "slider", "min": 2.8, "max": 8, "step": 0.1, "default": null, "unit": "מ׳", "inheritsFrom": "defaults.floorHeight" },
+          { "key": "height.floors", "label": "מספר קומות", "control": "slider", "min": 1, "max": 160, "step": 1, "default": 30 },
+          { "key": "height.floorHeight", "label": "גובה קומה", "control": "slider", "min": 2.4, "max": 14, "step": 0.1, "default": null, "unit": "מ׳", "inheritsFrom": "defaults.floorHeight" },
           { "key": "height.doubleGround", "label": "קומת קרקע כפולה", "control": "toggle", "default": false, "masses": ["base"] }
         ]
       },
@@ -96,12 +96,12 @@
         "title": "פרופיל אנכי",
         "subtitle": "איך הגוש משתנה לאורך הגובה",
         "fields": [
-          { "key": "profile.taperX", "label": "הצרה ברוחב", "control": "slider", "min": 0, "max": 0.9, "step": 0.01, "default": 0, "unit": "×", "hint": "כמה הגוש מצטמצם בראשו" },
-          { "key": "profile.taperY", "label": "הצרה בעומק", "control": "slider", "min": 0, "max": 0.9, "step": 0.01, "default": 0, "unit": "×" },
-          { "key": "profile.twist", "label": "פיתול כולל", "control": "slider", "min": -180, "max": 180, "step": 1, "default": 0, "unit": "°" },
+          { "key": "profile.taperX", "label": "הצרה ברוחב", "control": "slider", "min": -0.8, "max": 0.97, "step": 0.01, "default": 0, "unit": "×", "hint": "כמה הגוש מצטמצם בראשו" },
+          { "key": "profile.taperY", "label": "הצרה בעומק", "control": "slider", "min": -0.8, "max": 0.97, "step": 0.01, "default": 0, "unit": "×" },
+          { "key": "profile.twist", "label": "פיתול כולל", "control": "slider", "min": -720, "max": 720, "step": 1, "default": 0, "unit": "°" },
           { "key": "profile.twistMode", "label": "מצב פיתול", "control": "segmented", "options": [["continuous", "רציף לכל קומה"], ["stepped", "מדורג לכל מקטע"]], "default": "continuous" },
-          { "key": "profile.bulge", "label": "התעגלות", "control": "slider", "min": -0.3, "max": 0.3, "step": 0.01, "default": 0, "unit": "×", "hint": "התרחבות או התכווצות באמצע הגובה" },
-          { "key": "profile.lean", "label": "הטיה", "control": "slider", "min": 0, "max": 15, "step": 0.5, "default": 0, "unit": "°" },
+          { "key": "profile.bulge", "label": "התעגלות", "control": "slider", "min": -0.6, "max": 0.6, "step": 0.01, "default": 0, "unit": "×", "hint": "התרחבות או התכווצות באמצע הגובה" },
+          { "key": "profile.lean", "label": "הטיה", "control": "slider", "min": 0, "max": 30, "step": 0.5, "default": 0, "unit": "°" },
           { "key": "profile.leanDir", "label": "כיוון הטיה", "control": "slider", "min": 0, "max": 360, "step": 5, "default": 0, "unit": "°", "showIf": "profile.lean>0" },
           { "key": "profile.curve", "label": "עקומת פרופיל", "control": "segmented", "options": [["linear", "לינארית"], ["easeIn", "מואצת"], ["easeOut", "מואטת"]], "default": "linear" }
         ]
@@ -112,15 +112,15 @@
         "title": "חלוקה ופירוק",
         "subtitle": "פירוק הגוש למקטעים",
         "fields": [
-          { "key": "division.segments", "label": "מספר מקטעים", "control": "slider", "min": 1, "max": 20, "step": 1, "default": 1, "hint": "כל מקטע ניתן לעריכה נפרדת" },
-          { "key": "division.setback", "label": "נסיגה בין מקטעים", "control": "slider", "min": 0, "max": 10, "step": 0.5, "default": 0, "unit": "מ׳", "hint": "כל מקטע קטן מקודמו בכל צד" },
-          { "key": "division.staggerX", "label": "הזזה מדורגת X", "control": "slider", "min": -15, "max": 15, "step": 0.5, "default": 0, "unit": "מ׳" },
-          { "key": "division.staggerY", "label": "הזזה מדורגת Y", "control": "slider", "min": -15, "max": 15, "step": 0.5, "default": 0, "unit": "מ׳" },
+          { "key": "division.segments", "label": "מספר מקטעים", "control": "slider", "min": 1, "max": 40, "step": 1, "default": 1, "hint": "כל מקטע ניתן לעריכה נפרדת" },
+          { "key": "division.setback", "label": "נסיגה בין מקטעים", "control": "slider", "min": -8, "max": 20, "step": 0.5, "default": 0, "unit": "מ׳", "hint": "כל מקטע קטן מקודמו בכל צד" },
+          { "key": "division.staggerX", "label": "הזזה מדורגת X", "control": "slider", "min": -40, "max": 40, "step": 0.5, "default": 0, "unit": "מ׳" },
+          { "key": "division.staggerY", "label": "הזזה מדורגת Y", "control": "slider", "min": -40, "max": 40, "step": 0.5, "default": 0, "unit": "מ׳" },
           { "key": "division.pattern", "label": "דפוס הזזה", "control": "segmented", "options": [["linear", "קווי"], ["zigzag", "זיגזג"], ["seeded", "אקראי מבוקר"]], "default": "linear" },
           { "key": "division.seed", "label": "זרע אקראי", "control": "slider", "min": 1, "max": 99, "step": 1, "default": 7, "showIf": "division.pattern==seeded", "hint": "אותו זרע נותן תמיד אותה תוצאה" },
           { "key": "division.voidEvery", "label": "חלל ביניים כל", "control": "slider", "min": 0, "max": 10, "step": 1, "default": 0, "unit": "מקטעים", "hint": "0 = ללא חללים" },
-          { "key": "division.voidFloors", "label": "גובה חלל", "control": "slider", "min": 1, "max": 3, "step": 1, "default": 1, "unit": "קומות", "showIf": "division.voidEvery>0" },
-          { "key": "division.cantilever", "label": "זיז במקטע העליון", "control": "slider", "min": 0, "max": 15, "step": 0.5, "default": 0, "unit": "מ׳" },
+          { "key": "division.voidFloors", "label": "גובה חלל", "control": "slider", "min": 1, "max": 6, "step": 1, "default": 1, "unit": "קומות", "showIf": "division.voidEvery>0" },
+          { "key": "division.cantilever", "label": "זיז במקטע העליון", "control": "slider", "min": 0, "max": 35, "step": 0.5, "default": 0, "unit": "מ׳" },
           { "key": "division.cantileverDir", "label": "כיוון זיז", "control": "slider", "min": 0, "max": 360, "step": 5, "default": 0, "unit": "°", "showIf": "division.cantilever>0" }
         ]
       },

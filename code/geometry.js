@@ -87,6 +87,11 @@ export function footprint(fp) {
       const aw = w * arm / 2, ad = d * arm;
       return [[-aw, -hd], [aw, -hd], [aw, hd - ad], [hw, hd - ad], [hw, hd], [-hw, hd], [-hw, hd - ad], [-aw, hd - ad]];
     }
+    case 'H': {
+      const aw = w * arm / 2, ad = d * arm / 2;
+      return [[-hw, -hd], [-hw + aw, -hd], [-hw + aw, -ad], [hw - aw, -ad], [hw - aw, -hd], [hw, -hd],
+        [hw, hd], [hw - aw, hd], [hw - aw, ad], [-hw + aw, ad], [-hw + aw, hd], [-hw, hd]];
+    }
     case 'cross': {
       const aw = w * arm / 2, ad = d * arm / 2;
       return [[-aw, -hd], [aw, -hd], [aw, -ad], [hw, -ad], [hw, ad], [aw, ad], [aw, hd], [-aw, hd], [-aw, ad], [-hw, ad], [-hw, -ad], [-aw, -ad]];
@@ -211,6 +216,27 @@ function crownVariant(crown) {
   return c;
 }
 
+// ---------- per-tower overrides ----------
+// towers.overrides[i] is a flat map of dotted paths, e.g. { 'body.height.floors': 52,
+// 'crown.crownType': 'spire' }. Tower 0 has none: it IS the source every other tower
+// inherits from. Same grammar as a segment's overrides, one level up.
+export function towerProject(project, ti) {
+  const ov = project.towers?.overrides?.[ti];
+  if (!ov) return project;
+  const keys = Object.keys(ov);
+  if (!keys.length) return project;
+  let p = project;
+  for (const k of keys) p = setPath(p, k, ov[k]);
+  return p;
+}
+
+// The value a tower actually uses for a path, whether inherited or overridden.
+export function resolveTower(project, ti, path) {
+  const ov = project.towers?.overrides?.[ti];
+  if (ov && ov[path] !== undefined) return ov[path];
+  return getPath(project, path);
+}
+
 // ---------- building ----------
 export function buildTower(project) {
   const slabs = [];
@@ -225,16 +251,17 @@ export function buildTower(project) {
   const offsets = towerOffsets(project.towers);
   const towerTops = [];
   offsets.forEach(([ox, oy], ti) => {
-    const r = buildMass(project, 'body', project.body, { ...ctx, cx: ox, cy: oy }, ti);
+    const tp = towerProject(project, ti); // tower 0 is the source; the others may override it
+    const r = buildMass(tp, 'body', tp.body, { ...ctx, cx: ox, cy: oy }, ti);
     slabs.push(...r.slabs);
     towerTops.push(r.top);
-    if (en.crown !== false && project.crown) {
-      const cv = crownVariant(project.crown);
+    if (en.crown !== false && tp.crown) {
+      const cv = crownVariant(tp.crown);
       if (cv.crownType === 'terminus') {
-        cv.footprint = { ...project.body.footprint, width: r.top.belowW, depth: r.top.belowD };
-        cv.profile = { ...project.body.profile, taperX: 0.6, taperY: 0.6 };
+        cv.footprint = { ...tp.body.footprint, width: r.top.belowW, depth: r.top.belowD };
+        cv.profile = { ...tp.body.profile, taperX: 0.6, taperY: 0.6 };
       }
-      const rc = buildMass(project, 'crown', cv, { z: r.top.z, cx: r.top.cx, cy: r.top.cy, belowW: r.top.belowW, belowD: r.top.belowD }, ti);
+      const rc = buildMass(tp, 'crown', cv, { z: r.top.z, cx: r.top.cx, cy: r.top.cy, belowW: r.top.belowW, belowD: r.top.belowD }, ti);
       rc.slabs.forEach((s) => { if (cv.crownType === 'frame' || cv.crownType === 'screen') s.kind = 'open'; });
       slabs.push(...rc.slabs);
     }

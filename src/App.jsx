@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import TowerViewer from '../code/TowerViewer.jsx';
-import { buildTower, setPath, syncSegments } from '../code/geometry.js';
+import { buildTower, setPath, syncSegments, towerProject } from '../code/geometry.js';
 import presetsFile from '../data/presets.json';
 import ParamPanel from './ParamPanel.jsx';
 import MassSection from './MassSection.jsx';
@@ -29,6 +29,7 @@ export default function App() {
   const [level, setLevel] = useState('building');
   const [selectedMass, setSelectedMass] = useState(null);
   const [selectedSegment, setSelectedSegment] = useState(null);
+  const [activeTower, setActiveTower] = useState(0);
   const [colorMode, setColorMode] = useState('mass');
   const [floorLines, setFloorLines] = useState(true);
   const [activeView, setActiveView] = useState('axon');
@@ -68,17 +69,50 @@ export default function App() {
     history.current.future = [];
   };
 
+  // A change to body/crown while a tower other than the first is active is stored
+  // as that tower's override, so the towers stop being copies of each other.
+  const routesToTower = useCallback((path) =>
+    activeTower > 0 && (path.startsWith('body.') || path.startsWith('crown.')),
+  [activeTower]);
+
   const onChange = useCallback((path, value) => {
     setProject((p) => {
-      let data = setPath(p.data, path, value);
-      if (path === 'body.division.segments') data = { ...data, body: syncSegments(data.body) };
+      let data;
+      if (routesToTower(path)) {
+        const list = [...(p.data.towers?.overrides || [])];
+        list[activeTower] = { ...(list[activeTower] || {}), [path]: value };
+        data = setPath(p.data, 'towers.overrides', list);
+      } else {
+        data = setPath(p.data, path, value);
+        if (path === 'body.division.segments') data = { ...data, body: syncSegments(data.body) };
+      }
       pushHistory(p.data);
       return { ...p, data };
     });
     setDirty(true);
-  }, []);
+  }, [activeTower, routesToTower]);
+
+  const isTowerOverride = useCallback((path) =>
+    project.data.towers?.overrides?.[activeTower]?.[path] !== undefined,
+  [project, activeTower]);
+
+  const onRevertTower = useCallback((path) => {
+    setProject((p) => {
+      const list = [...(p.data.towers?.overrides || [])];
+      const ov = { ...(list[activeTower] || {}) };
+      delete ov[path];
+      list[activeTower] = ov;
+      pushHistory(p.data);
+      return { ...p, data: setPath(p.data, 'towers.overrides', list) };
+    });
+    setDirty(true);
+  }, [activeTower]);
 
   const onRevert = useCallback((mass, segIndex, key) => {
+    if (activeTower > 0 && mass !== 'base') {
+      onRevertTower(`${mass}.segmentsList.${segIndex}.overrides.${key}`);
+      return;
+    }
     setProject((p) => {
       const list = [...p.data[mass].segmentsList];
       const overrides = { ...list[segIndex].overrides };
@@ -88,7 +122,7 @@ export default function App() {
       return { ...p, data: { ...p.data, [mass]: { ...p.data[mass], segmentsList: list } } };
     });
     setDirty(true);
-  }, []);
+  }, [activeTower, onRevertTower]);
 
   const onSegmentAction = useCallback((action) => {
     const list = [...project.data.body.segmentsList];
@@ -145,6 +179,14 @@ export default function App() {
 
   const built = useMemo(() => buildTower(project.data), [project]);
   const m = built.metrics;
+  const towerCount = project.data.towers?.count ?? 1;
+  // the project as the active tower sees it — its own overrides applied on top of tower 1
+  const effective = useMemo(() => towerProject(project.data, activeTower), [project, activeTower]);
+
+  // keep the active tower valid when the count drops
+  useEffect(() => {
+    if (activeTower > towerCount - 1) setActiveTower(0);
+  }, [towerCount, activeTower]);
 
   // ---------- loading a model into the page ----------
   const load = (p, persist) => {
@@ -261,11 +303,13 @@ export default function App() {
             }}>שמירה כטיפולוגיה</button>
         </Menu>
 
+        <span className="divider" />
         <button type="button" className="projname" onClick={rename} title="שינוי שם">{project.name}</button>
         <span className="saved">{saved ? 'נשמר אוטומטית' : 'שומר…'}</span>
         <span className="grow" />
-        <button className="btn small" onClick={undo}>ביטול</button>
-        <button className="btn small" onClick={redo}>חזרה</button>
+        <button className="btn small ghost" onClick={undo}>ביטול</button>
+        <button className="btn small ghost" onClick={redo}>חזרה</button>
+        <span className="divider" />
         <button className="btn primary" onClick={() => {
           saveProject({ ...project, metrics: m });
           setRows(listProjects()); setSaved(true); setDirty(true); say('נשמר');
@@ -274,18 +318,26 @@ export default function App() {
 
       <div className="studio">
         <MassSection slabs={built.slabs} level={level} selectedMass={selectedMass} selectedSegment={selectedSegment}
-          onSelectMass={enterMass} onSelectSegment={enterSegment} />
+          activeTower={activeTower} onSelectMass={enterMass} onSelectSegment={enterSegment} />
 
         <aside className="panel">
-          <ParamPanel project={project.data} level={level} selectedMass={selectedMass} selectedSegment={selectedSegment}
+          <ParamPanel project={project.data} effective={effective} level={level}
+            selectedMass={selectedMass} selectedSegment={selectedSegment}
+            activeTower={activeTower} towerCount={towerCount} onSelectTower={setActiveTower}
+            isTowerOverride={isTowerOverride} onRevertTower={onRevertTower}
             onChange={onChange} onEnterMass={enterMass} onEnterSegment={enterSegment} onUp={goUp}
             onSegmentAction={onSegmentAction} onRevert={onRevert} />
         </aside>
 
         <div className="viewport">
           <TowerViewer ref={viewerRef} project={project.data} level={level} selectedMass={selectedMass}
-            selectedSegment={selectedSegment} colorMode={colorMode} floorLines={floorLines}
-            onPick={(mass, seg) => (level === 'mass' && mass === selectedMass && seg !== null ? enterSegment(seg) : enterMass(mass))} />
+            selectedSegment={selectedSegment} selectedTower={level === 'building' ? null : activeTower}
+            colorMode={colorMode} floorLines={floorLines}
+            onPick={(mass, seg, tower) => {
+              if (tower != null && mass !== 'base') setActiveTower(tower);
+              if (level === 'mass' && mass === selectedMass && seg !== null) enterSegment(seg);
+              else enterMass(mass);
+            }} />
           <div className="north">צפון ↑</div>
           <div className="overlay">
             <div className="bar">

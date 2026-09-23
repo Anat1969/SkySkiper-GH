@@ -121,7 +121,7 @@ function Field({ field, value, onChange, inherited, onRevert }) {
   );
 }
 
-function Group({ group, scope, open, onToggle, valueOf, onChange }) {
+function Group({ group, scope, open, onToggle, valueOf, onChange, badgeFor, onRevert }) {
   const fields = group.fields.filter((f) => visible(f.showIf, scope) && (!f.masses || f.masses.includes(scope._massKey)));
   if (!fields.length) return null;
   const summarize = (f) => {
@@ -143,7 +143,8 @@ function Group({ group, scope, open, onToggle, valueOf, onChange }) {
       {open && (
         <div className="body">
           {fields.map((f) => (
-            <Field key={f.key} field={f} value={valueOf(f)} onChange={onChange} />
+            <Field key={f.key} field={f} value={valueOf(f)} onChange={onChange}
+              inherited={badgeFor ? badgeFor(f) : undefined} onRevert={onRevert} />
           ))}
         </div>
       )}
@@ -152,7 +153,8 @@ function Group({ group, scope, open, onToggle, valueOf, onChange }) {
 }
 
 export default function ParamPanel({
-  project, level, selectedMass, selectedSegment,
+  project, effective, level, selectedMass, selectedSegment,
+  activeTower, towerCount, onSelectTower, isTowerOverride, onRevertTower,
   onChange, onEnterMass, onEnterSegment, onUp, onSegmentAction, onRevert,
 }) {
   const [open, setOpen] = useState('footprint');
@@ -171,6 +173,19 @@ export default function ParamPanel({
           <Group key={g.id} group={g} scope={project} open={open === g.id} onToggle={() => toggle(g.id)}
             valueOf={(f) => getPath(project, f.key)} onChange={onChange} />
         ))}
+        {towerCount > 1 && (
+          <>
+            <div style={{ height: 16 }} />
+            <h3>מגדל לעבודה</h3>
+            <h4>כל מגדל נערך בנפרד. מגדל 1 הוא המקור, והשאר יורשים ממנו</h4>
+            <div className="segmented" style={{ marginTop: 8 }}>
+              {Array.from({ length: towerCount }, (_, i) => (
+                <button type="button" key={i} className={activeTower === i ? 'on' : ''}
+                  onClick={() => onSelectTower(i)}>{i + 1}</button>
+              ))}
+            </div>
+          </>
+        )}
         <div style={{ height: 16 }} />
         <div className="hint" style={{ marginBottom: 8 }}>כניסה לגוש כדי לערוך את הפרמטרים שלו</div>
         <div className="segmented">
@@ -185,7 +200,9 @@ export default function ParamPanel({
     );
   }
 
-  const mass = project[selectedMass];
+  // `effective` is the project as this tower sees it: tower 0 values plus its own overrides.
+  const mass = effective[selectedMass];
+  const perTower = towerCount > 1 && activeTower > 0 && selectedMass !== 'base';
   const massScope = { ...mass, _massKey: selectedMass };
   const abs = (key) => `${selectedMass}.${key}`;
 
@@ -232,11 +249,12 @@ export default function ParamPanel({
           );
         })}
         <div style={{ height: 16 }} />
-        <div className="segmented">
-          <button type="button" onClick={() => onSegmentAction('duplicate')}>שכפול</button>
-          <button type="button" onClick={() => onSegmentAction('up')}>למעלה</button>
-          <button type="button" onClick={() => onSegmentAction('down')}>למטה</button>
-          <button type="button" onClick={() => onSegmentAction('delete')}>מחיקה</button>
+        <h4 style={{ marginBottom: 6 }}>פעולות על המקטע</h4>
+        <div className="actions">
+          <button type="button" className="btn small ghost" onClick={() => onSegmentAction('duplicate')}>שכפול</button>
+          <button type="button" className="btn small ghost" onClick={() => onSegmentAction('up')}>למעלה</button>
+          <button type="button" className="btn small ghost" onClick={() => onSegmentAction('down')}>למטה</button>
+          <button type="button" className="btn small ghost danger" onClick={() => onSegmentAction('delete')}>מחיקה</button>
         </div>
       </>
     );
@@ -252,13 +270,31 @@ export default function ParamPanel({
       </div>
       <h2>
         <span className="swatch" style={{ background: MASS_VAR[selectedMass] }} />
-        {MASS_LABEL[selectedMass]}
+        {MASS_LABEL[selectedMass]}{towerCount > 1 && selectedMass !== 'base' ? ` · מגדל ${activeTower + 1}` : ''}
       </h2>
       <h4>{mass.height?.floors} קומות{segs.length > 1 ? ` · ${segs.length} מקטעים` : ''}</h4>
+      {towerCount > 1 && selectedMass === 'base' && (
+        <div className="hint" style={{ marginTop: 6 }}>הבסיס משותף לכל המגדלים</div>
+      )}
+      {perTower && (
+        <div className="hint" style={{ marginTop: 6 }}>שינוי כאן חל על מגדל {activeTower + 1} בלבד</div>
+      )}
       <div style={{ height: 16 }} />
       {typeSel && (
         <div className="field">
-          <label>{typeSel.label}</label>
+          <label>
+            {typeSel.label}
+            {perTower && (
+              <>
+                <span className={`badge ${isTowerOverride(abs(typeSel.key)) ? 'local' : ''}`}>
+                  {isTowerOverride(abs(typeSel.key)) ? 'מקומי' : 'יורש'}
+                </span>
+                {isTowerOverride(abs(typeSel.key)) && (
+                  <button type="button" className="btn small" onClick={() => onRevertTower(abs(typeSel.key))}>החזר לירושה</button>
+                )}
+              </>
+            )}
+          </label>
           <select value={mass[typeSel.key] ?? typeSel.default}
             onChange={(e) => onChange(abs(typeSel.key), e.target.value)}>
             {typeSel.options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
@@ -268,6 +304,8 @@ export default function ParamPanel({
       {params.mass.groups.map((g) => (
         <Group key={g.id} group={g} scope={massScope} open={open === g.id} onToggle={() => toggle(g.id)}
           valueOf={(f) => getPath(mass, f.key)}
+          badgeFor={perTower ? (f) => !isTowerOverride(abs(f.key)) : undefined}
+          onRevert={perTower ? (k) => onRevertTower(abs(k)) : undefined}
           onChange={(k, v) => onChange(abs(k), v)} />
       ))}
       {selectedMass === 'body' && (

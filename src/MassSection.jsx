@@ -10,13 +10,15 @@ function bboxWidth(points) {
   return Math.max(...xs) - Math.min(...xs);
 }
 
-export default function MassSection({ slabs, level, selectedMass, selectedSegment, onSelectMass, onSelectSegment }) {
-  const tower0 = slabs.filter((s) => (s.tower ?? 0) === 0 && s.mass !== 'bridge');
-  if (!tower0.length) return <div className="column" />;
+export default function MassSection({ slabs, level, selectedMass, selectedSegment, activeTower = 0, onSelectMass, onSelectSegment }) {
+  // the base is shared, so it is read from tower 0 whichever tower is active
+  const shown = slabs.filter((s) => s.mass !== 'bridge'
+    && (s.mass === 'base' ? (s.tower ?? 0) === 0 : (s.tower ?? 0) === activeTower));
+  if (!shown.length) return <div className="column" />;
 
   // one block per base / body segment / crown
   const groups = [];
-  for (const s of tower0) {
+  for (const s of shown) {
     const key = `${s.mass}:${s.segment ?? ''}`;
     let g = groups.find((x) => x.key === key);
     if (!g) {

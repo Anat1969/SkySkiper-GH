@@ -321,7 +321,7 @@ export default function App() {
           activeTower={activeTower} onSelectMass={enterMass} onSelectSegment={enterSegment} />
 
         <aside className="panel">
-          <ParamPanel project={project.data} effective={effective} level={level}
+          <ParamPanel key={level} project={project.data} effective={effective} level={level}
             selectedMass={selectedMass} selectedSegment={selectedSegment}
             activeTower={activeTower} towerCount={towerCount} onSelectTower={setActiveTower}
             isTowerOverride={isTowerOverride} onRevertTower={onRevertTower}

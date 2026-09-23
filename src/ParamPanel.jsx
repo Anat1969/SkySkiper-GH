@@ -157,7 +157,8 @@ export default function ParamPanel({
   activeTower, towerCount, onSelectTower, isTowerOverride, onRevertTower,
   onChange, onEnterMass, onEnterSegment, onUp, onSegmentAction, onRevert,
 }) {
-  const [open, setOpen] = useState('footprint');
+  // open the group that matters for this level, so nothing important starts hidden
+  const [open, setOpen] = useState(level === 'building' ? 'towers' : 'footprint');
   const toggle = (id) => setOpen((o) => (o === id ? null : id));
 
   // ---------- building level ----------
@@ -173,10 +174,10 @@ export default function ParamPanel({
           <Group key={g.id} group={g} scope={project} open={open === g.id} onToggle={() => toggle(g.id)}
             valueOf={(f) => getPath(project, f.key)} onChange={onChange} />
         ))}
-        {towerCount > 1 && (
+        <div style={{ height: 16 }} />
+        <h3>מגדל לעבודה</h3>
+        {towerCount > 1 ? (
           <>
-            <div style={{ height: 16 }} />
-            <h3>מגדל לעבודה</h3>
             <h4>כל מגדל נערך בנפרד. מגדל 1 הוא המקור, והשאר יורשים ממנו</h4>
             <div className="segmented" style={{ marginTop: 8 }}>
               {Array.from({ length: towerCount }, (_, i) => (
@@ -184,6 +185,15 @@ export default function ParamPanel({
                   onClick={() => onSelectTower(i)}>{i + 1}</button>
               ))}
             </div>
+          </>
+        ) : (
+          <>
+            <h4>מגדל אחד בלבד בפרויקט</h4>
+            <div className="hint" style={{ marginTop: 6 }}>
+              העלאת <strong>מספר מגדלים</strong> מעל 1 פותחת כאן בורר, וכל מגדל נערך בנפרד.
+            </div>
+            <button type="button" className="btn small" style={{ marginTop: 8 }}
+              onClick={() => onChange('towers.count', 2)}>הוספת מגדל שני</button>
           </>
         )}
         <div style={{ height: 16 }} />

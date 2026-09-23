@@ -4,6 +4,7 @@ import { buildTower, setPath, syncSegments } from '../code/geometry.js';
 import presetsFile from '../data/presets.json';
 import ParamPanel from './ParamPanel.jsx';
 import MassSection from './MassSection.jsx';
+import Menu from './Menu.jsx';
 import { listProjects, listTypologies, saveProject, deleteProject, saveTypology, newId } from './store.js';
 
 const clone = (o) => JSON.parse(JSON.stringify(o));
@@ -14,13 +15,17 @@ function projectFromPreset(preset) {
   let data = clone(presetsFile.default);
   for (const [key, value] of Object.entries(preset.patch || {})) data = setPath(data, key, value);
   data.body = syncSegments(data.body);
-  data.typology = preset.id;
   return { id: newId(), name: preset.name, typology: preset.id, data };
 }
 
+// The page always opens on a model: the last saved project, or the first typology.
+function initialProject() {
+  const saved = listProjects();
+  return saved.length ? saved[0] : projectFromPreset(presetsFile.presets[0]);
+}
+
 export default function App() {
-  const [view, setView] = useState('projects');
-  const [project, setProject] = useState(null);
+  const [project, setProject] = useState(initialProject);
   const [level, setLevel] = useState('building');
   const [selectedMass, setSelectedMass] = useState(null);
   const [selectedSegment, setSelectedSegment] = useState(null);
@@ -29,8 +34,9 @@ export default function App() {
   const [activeView, setActiveView] = useState('axon');
   const [toast, setToast] = useState('');
   const [rows, setRows] = useState(() => listProjects());
+  const [typologies, setTypologies] = useState(() => listTypologies());
   const [saved, setSaved] = useState(true);
-  const [filter, setFilter] = useState('');
+  const [dirty, setDirty] = useState(false);
 
   const viewerRef = useRef(null);
   const history = useRef({ past: [], future: [] });
@@ -41,9 +47,9 @@ export default function App() {
     setTimeout(() => setToast(''), 2200);
   }, []);
 
-  // ---------- autosave ----------
+  // ---------- autosave (only once the model has actually been touched) ----------
   useEffect(() => {
-    if (!project) return;
+    if (!dirty) return;
     setSaved(false);
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
@@ -53,27 +59,23 @@ export default function App() {
       setSaved(true);
     }, 800);
     return () => clearTimeout(saveTimer.current);
-  }, [project]);
+  }, [project, dirty]);
 
   // ---------- editing ----------
-  const commit = useCallback((nextData) => {
-    setProject((p) => {
-      history.current.past.push(p.data);
-      if (history.current.past.length > 50) history.current.past.shift();
-      history.current.future = [];
-      return { ...p, data: nextData };
-    });
-  }, []);
+  const pushHistory = (data) => {
+    history.current.past.push(data);
+    if (history.current.past.length > 50) history.current.past.shift();
+    history.current.future = [];
+  };
 
   const onChange = useCallback((path, value) => {
     setProject((p) => {
       let data = setPath(p.data, path, value);
       if (path === 'body.division.segments') data = { ...data, body: syncSegments(data.body) };
-      history.current.past.push(p.data);
-      if (history.current.past.length > 50) history.current.past.shift();
-      history.current.future = [];
+      pushHistory(p.data);
       return { ...p, data };
     });
+    setDirty(true);
   }, []);
 
   const onRevert = useCallback((mass, segIndex, key) => {
@@ -82,9 +84,10 @@ export default function App() {
       const overrides = { ...list[segIndex].overrides };
       delete overrides[key];
       list[segIndex] = { ...list[segIndex], overrides };
-      history.current.past.push(p.data);
+      pushHistory(p.data);
       return { ...p, data: { ...p.data, [mass]: { ...p.data[mass], segmentsList: list } } };
     });
+    setDirty(true);
   }, []);
 
   const onSegmentAction = useCallback((action) => {
@@ -97,72 +100,63 @@ export default function App() {
     else return;
 
     const body = { ...project.data.body, segmentsList: list, division: { ...project.data.body.division, segments: list.length } };
-    commit({ ...project.data, body });
-    if (action === 'delete') setSelectedSegment(Math.max(0, i - 1));
-    else if (action === 'up') setSelectedSegment(Math.max(0, i - 1));
+    pushHistory(project.data);
+    setProject({ ...project, data: { ...project.data, body } });
+    setDirty(true);
+    if (action === 'delete' || action === 'up') setSelectedSegment(Math.max(0, i - 1));
     else if (action === 'down') setSelectedSegment(Math.min(list.length - 1, i + 1));
     else setSelectedSegment(i + 1);
-  }, [project, selectedSegment, commit]);
+  }, [project, selectedSegment]);
 
   const undo = useCallback(() => {
     const h = history.current;
-    if (!h.past.length) return;
-    setProject((p) => {
-      h.future.push(p.data);
-      return { ...p, data: h.past.pop() };
-    });
+    if (!h.past.length) return say('אין מה לבטל');
+    setProject((p) => { h.future.push(p.data); return { ...p, data: h.past.pop() }; });
+    setDirty(true);
     say('בוטל');
   }, [say]);
 
   const redo = useCallback(() => {
     const h = history.current;
     if (!h.future.length) return;
-    setProject((p) => {
-      h.past.push(p.data);
-      return { ...p, data: h.future.pop() };
-    });
+    setProject((p) => { h.past.push(p.data); return { ...p, data: h.future.pop() }; });
+    setDirty(true);
   }, []);
 
-  // ---------- navigation ----------
+  // ---------- navigation between the three levels ----------
   const enterMass = (m) => { setSelectedMass(m); setSelectedSegment(null); setLevel('mass'); };
   const enterSegment = (i) => { setSelectedMass('body'); setSelectedSegment(i); setLevel('segment'); };
-  const goUp = (to) => {
+  const goUp = useCallback((to) => {
     if (to === 'building') { setLevel('building'); setSelectedMass(null); setSelectedSegment(null); }
     else { setLevel('mass'); setSelectedSegment(null); }
-  };
+  }, []);
 
   useEffect(() => {
     const onKey = (e) => {
-      if (view !== 'studio') return;
       if (e.key === 'Escape') goUp(level === 'segment' ? 'mass' : 'building');
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
         e.preventDefault();
-        e.shiftKey ? redo() : undo();
+        if (e.shiftKey) redo(); else undo();
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [view, level, undo, redo]);
+  }, [level, goUp, undo, redo]);
 
-  // ---------- derived ----------
-  const built = useMemo(() => (project ? buildTower(project.data) : null), [project]);
+  const built = useMemo(() => buildTower(project.data), [project]);
+  const m = built.metrics;
 
-  // ---------- actions ----------
-  const openPreset = (preset) => {
-    const p = projectFromPreset(preset);
+  // ---------- loading a model into the page ----------
+  const load = (p, persist) => {
+    if (persist) {
+      saveProject({ ...p, metrics: buildTower(p.data).metrics });
+      setRows(listProjects());
+    }
     setProject(p);
-    saveProject(p);
-    setRows(listProjects());
+    setDirty(false);
+    setSaved(true);
     history.current = { past: [], future: [] };
     setLevel('building'); setSelectedMass(null); setSelectedSegment(null);
-    setView('studio');
-  };
-
-  const openProject = (row) => {
-    setProject(row);
-    history.current = { past: [], future: [] };
-    setLevel('building'); setSelectedMass(null); setSelectedSegment(null);
-    setView('studio');
   };
 
   const exportJSON = () => {
@@ -190,10 +184,8 @@ export default function App() {
     reader.onload = () => {
       try {
         const parsed = JSON.parse(reader.result);
-        const p = { id: newId(), name: parsed.name || 'פרויקט מיובא', typology: parsed.typology, data: parsed.data || parsed };
-        saveProject(p);
-        setRows(listProjects());
-        openProject(p);
+        load({ id: newId(), name: parsed.name || 'פרויקט מיובא', typology: parsed.typology, data: parsed.data || parsed }, true);
+        say('הפרויקט יובא');
       } catch {
         say('הקובץ אינו JSON תקין של פרויקט. נסי לייצא מחדש מהסטודיו.');
       }
@@ -201,127 +193,83 @@ export default function App() {
     reader.readAsText(file);
   };
 
-  // ================= screens =================
-  if (view === 'projects') {
-    const shown = rows.filter((r) => r.name.includes(filter));
-    return (
-      <div className="app">
-        <header className="topbar">
-          <h1>סטודיו מסות</h1>
-          <span className="saved">בנייה גבוהה — בסיס, גוף וכותרת</span>
-          <span className="grow" />
-        </header>
-        <main className="page">
-          <div className="page-head">
-            <div className="crumbs">פרויקטים</div>
-            <h1>פרויקטים</h1>
-          </div>
-          <div className="dash">
-            <div className="panelbox">
-              <input placeholder="סינון לפי שם" value={filter} onChange={(e) => setFilter(e.target.value)}
-                style={{ width: '100%', minHeight: 'var(--touch)', padding: '0 12px', border: '1px solid var(--line)', borderRadius: 'var(--radius-s)', fontFamily: 'var(--font-ui)', marginBottom: 16 }} />
-              {shown.length === 0 ? (
-                <div className="empty">עדיין אין פרויקטים. פרויקט חדש מתחיל מטיפולוגיה, ואפשר לשנות בו הכול.</div>
-              ) : (
-                <table>
-                  <thead>
-                    <tr><th>שם</th><th>טיפולוגיה</th><th>גובה</th><th>קומות</th><th>שטח ברוטו</th><th /></tr>
-                  </thead>
-                  <tbody>
-                    {shown.map((r) => (
-                      <tr key={r.id} onClick={() => openProject(r)}>
-                        <td>{r.name}</td>
-                        <td>{presetsFile.presets.find((p) => p.id === r.typology)?.name || '—'}</td>
-                        <td>{r.metrics ? `${r.metrics.height} מ׳` : '—'}</td>
-                        <td>{r.metrics?.floors ?? '—'}</td>
-                        <td>{r.metrics ? `${fmt(r.metrics.gfa)} מ״ר` : '—'}</td>
-                        <td>
-                          <button className="btn small danger" onClick={(e) => { e.stopPropagation(); deleteProject(r.id); setRows(listProjects()); say('הפרויקט נמחק'); }}>מחיקה</button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-            <div className="panelbox">
-              <h3>פעולות</h3>
-              <div style={{ height: 12 }} />
-              <button className="btn primary" style={{ width: '100%' }} onClick={() => setView('typologies')}>פרויקט חדש</button>
-              <div className="hint" style={{ margin: '6px 0 16px' }}>נפתח במסך הטיפולוגיות</div>
-              <button className="btn" style={{ width: '100%' }} disabled={!rows.length} onClick={() => rows.length && openProject(rows[0])}>פתיחת הפרויקט האחרון</button>
-              <div className="hint" style={{ margin: '6px 0 16px' }}>{rows.length ? rows[0].name : 'אין עדיין פרויקט שמור'}</div>
-              <label className="btn" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                ייבוא JSON
-                <input type="file" accept="application/json" style={{ display: 'none' }}
-                  onChange={(e) => e.target.files[0] && importJSON(e.target.files[0])} />
-              </label>
-              <div className="hint" style={{ marginTop: 6 }}>קובץ שיוצא מהסטודיו</div>
-            </div>
-          </div>
-        </main>
-        {toast && <div className="toast">{toast}</div>}
-      </div>
-    );
-  }
+  const rename = () => {
+    const name = window.prompt('שם הפרויקט', project.name);
+    if (!name) return;
+    setProject((p) => ({ ...p, name }));
+    setDirty(true);
+  };
 
-  if (view === 'typologies') {
-    const mine = listTypologies();
-    return (
-      <div className="app">
-        <header className="topbar">
-          <h1>סטודיו מסות</h1>
-          <span className="grow" />
-          <button className="btn" onClick={() => setView('projects')}>חזרה לפרויקטים</button>
-        </header>
-        <main className="page">
-          <div className="page-head">
-            <div className="crumbs"><button onClick={() => setView('projects')}>פרויקטים</button>› טיפולוגיות</div>
-            <h1>טיפולוגיות</h1>
-            <div className="hint" style={{ marginTop: 6 }}>בחירת טיפולוגיה יוצרת פרויקט חדש. אפשר לשנות בו כל פרמטר.</div>
-          </div>
-          <div className="cards">
-            {presetsFile.presets.map((p) => (
-              <button className="card" key={p.id} onClick={() => openPreset(p)}>
-                <div className="name">{p.name}</div>
-                <div className="sub">{p.subtitle}</div>
-              </button>
-            ))}
-          </div>
-          {mine.length > 0 && (
-            <>
-              <h2 style={{ margin: '32px 0 16px' }}>הטיפולוגיות שלי</h2>
-              <div className="cards">
-                {mine.map((t) => (
-                  <button className="card" key={t.id} onClick={() => openProject({ id: newId(), name: t.name, typology: t.id, data: clone(t.data) })}>
-                    <div className="name">{t.name}</div>
-                    <div className="sub">{t.subtitle}</div>
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-        </main>
-        {toast && <div className="toast">{toast}</div>}
-      </div>
-    );
-  }
-
-  // ---------- studio ----------
-  const m = built.metrics;
   return (
     <div className="app">
       <header className="topbar">
-        <button className="btn small" onClick={() => setView('projects')}>פרויקטים</button>
-        <h2 style={{ fontSize: 18 }}>{project.name}</h2>
+        <strong className="brand">סטודיו מסות</strong>
+
+        <Menu label="פרויקטים">
+          <div className="menu-head">הפרויקטים שלי</div>
+          <div className="menu-list">
+            {rows.length === 0 && <div className="menu-empty">עדיין אין פרויקטים שמורים. כל שינוי במודל נשמר אוטומטית.</div>}
+            {rows.map((r) => (
+              <div className={`menu-row ${r.id === project.id ? 'on' : ''}`} key={r.id}>
+                <button type="button" data-close onClick={() => load(r, false)}>
+                  <span>{r.name}</span>
+                  <span className="menu-meta">{r.metrics ? `${r.metrics.floors} קומות · ${r.metrics.height} מ׳` : 'טרם חושב'}</span>
+                </button>
+                <button type="button" className="btn small danger"
+                  onClick={() => { deleteProject(r.id); setRows(listProjects()); say('הפרויקט נמחק'); }}>מחיקה</button>
+              </div>
+            ))}
+          </div>
+          <div className="menu-sep" />
+          <label className="menu-item" data-close>
+            ייבוא JSON
+            <input type="file" accept="application/json" style={{ display: 'none' }}
+              onChange={(e) => e.target.files[0] && importJSON(e.target.files[0])} />
+          </label>
+        </Menu>
+
+        <Menu label="טיפולוגיות">
+          <div className="menu-head">נקודת פתיחה. אפשר לשנות בה כל פרמטר</div>
+          <div className="menu-list">
+            {presetsFile.presets.map((p) => (
+              <button type="button" className="menu-row-btn" key={p.id} data-close
+                onClick={() => { load(projectFromPreset(p), true); say(`נפתח: ${p.name}`); }}>
+                <span>{p.name}</span>
+                <span className="menu-meta">{p.subtitle}</span>
+              </button>
+            ))}
+            {typologies.length > 0 && <div className="menu-head">הטיפולוגיות שלי</div>}
+            {typologies.map((t) => (
+              <button type="button" className="menu-row-btn" key={t.id} data-close
+                onClick={() => load({ id: newId(), name: t.name, typology: t.id, data: clone(t.data) }, true)}>
+                <span>{t.name}</span>
+                <span className="menu-meta">{t.subtitle}</span>
+              </button>
+            ))}
+          </div>
+        </Menu>
+
+        <Menu label="ייצוא">
+          <button type="button" className="menu-item" data-close onClick={exportPNG}>ייצוא תמונה</button>
+          <button type="button" className="menu-item" data-close onClick={exportJSON}>ייצוא JSON</button>
+          <div className="menu-sep" />
+          <button type="button" className="menu-item" data-close
+            onClick={() => {
+              saveTypology({ name: project.name, subtitle: `${m.floors} קומות · ${m.height} מ׳`, data: clone(project.data) });
+              setTypologies(listTypologies());
+              say('נשמר כטיפולוגיה');
+            }}>שמירה כטיפולוגיה</button>
+        </Menu>
+
+        <button type="button" className="projname" onClick={rename} title="שינוי שם">{project.name}</button>
         <span className="saved">{saved ? 'נשמר אוטומטית' : 'שומר…'}</span>
         <span className="grow" />
         <button className="btn small" onClick={undo}>ביטול</button>
         <button className="btn small" onClick={redo}>חזרה</button>
-        <button className="btn small" onClick={exportPNG}>ייצוא תמונה</button>
-        <button className="btn small" onClick={exportJSON}>ייצוא JSON</button>
-        <button className="btn small" onClick={() => { saveTypology({ name: project.name, subtitle: `${m.floors} קומות · ${m.height} מ׳`, data: clone(project.data) }); say('נשמר כטיפולוגיה'); }}>שמירה כטיפולוגיה</button>
-        <button className="btn primary" onClick={() => { saveProject({ ...project, metrics: m }); setRows(listProjects()); setSaved(true); say('נשמר'); }}>שמירה</button>
+        <button className="btn primary" onClick={() => {
+          saveProject({ ...project, metrics: m });
+          setRows(listProjects()); setSaved(true); setDirty(true); say('נשמר');
+        }}>שמירה</button>
       </header>
 
       <div className="studio">

@@ -1,0 +1,13 @@
+{
+  "name": "Project",
+  "type": "object",
+  "properties": {
+    "name": { "type": "string", "description": "שם הפרויקט" },
+    "typology": { "type": "string", "description": "id של הטיפולוגיה שממנה התחיל" },
+    "description": { "type": "string", "description": "הערה קצרה" },
+    "data": { "type": "object", "description": "כל מודל הבניין: site, defaults, enabled, towers, base, body, crown — לפי data/presets.json > default" },
+    "metrics": { "type": "object", "description": "תוצאת metrics() האחרונה: height, floors, gfa, typicalFloor, coverage, split" },
+    "thumbnail": { "type": "string", "description": "קישור לתמונת PNG אחרונה של המבט" }
+  },
+  "required": ["name", "data"]
+}

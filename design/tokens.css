@@ -1,0 +1,53 @@
+/* Design tokens — Tall Building Mass Studio
+   Palette 1 "בטון שחר" (Concrete Dawn): page, text, actions.
+   Palette 2 "אבן חוף" (Coastal Stone): panels, cards, states, mass colors.
+   Fonts: Frank Ruhl Libre (headings), Assistant (UI). Both support Hebrew. */
+
+@import url('https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Frank+Ruhl+Libre:wght@500;700&display=swap');
+
+:root {
+  /* Palette 1 — Concrete Dawn */
+  --bg: #F4F2EE;
+  --text: #1D2023;
+  --text-muted: #5A6168;
+  --primary: #0F6E6E;        /* deep sea teal: primary button, selection, links */
+  --primary-hover: #0A4F4F;
+  --secondary: #3E4A52;
+  --danger: #9B2C2C;
+
+  /* Palette 2 — Coastal Stone */
+  --panel: #FBFAF7;
+  --card: #FFFFFF;
+  --line: #D9D5CD;
+  --hover: #EEF4F3;
+  --selected-bg: #E3EFEE;
+
+  /* Mass colors — identical in 3D model, section column and labels */
+  --mass-base: #C27A55;
+  --mass-body: #7F93A6;
+  --mass-crown: #CFAE5C;
+
+  /* Type scale */
+  --font-head: 'Frank Ruhl Libre', serif;
+  --font-ui: 'Assistant', sans-serif;
+  --fs-h1: 28px;   /* page name */
+  --fs-h2: 22px;   /* level title: בניין / גוף / מקטע 3 */
+  --fs-h3: 16px;   /* parameter group: 4. פרופיל אנכי */
+  --fs-h4: 12px;   /* group subtitle */
+  --fs-label: 14px;
+  --fs-hint: 12px;
+  --fs-value: 14px;
+
+  /* Spacing & shape */
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 24px;
+  --radius-s: 6px; --radius-m: 10px;
+  --topbar-h: 56px; --footer-h: 44px; --column-w: 96px; --panel-w: 340px;
+  --touch: 44px;
+}
+
+html, body { direction: rtl; margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-ui); }
+h1 { font-family: var(--font-head); font-size: var(--fs-h1); font-weight: 700; margin: 0; }
+h2 { font-family: var(--font-head); font-size: var(--fs-h2); font-weight: 700; margin: 0; }
+h3 { font-size: var(--fs-h3); font-weight: 600; margin: 0; }
+h4 { font-size: var(--fs-h4); font-weight: 400; color: var(--text-muted); margin: 0; }
+.hint { font-size: var(--fs-hint); color: var(--text-muted); }

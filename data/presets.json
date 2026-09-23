@@ -1,0 +1,88 @@
+{
+  "_about": "default = full new project. Each preset = default + patch (dotted paths, applied with setPath from geometry.js). After applying, call syncSegments(project.body).",
+  "default": {
+    "name": "פרויקט חדש",
+    "typology": "tripartite",
+    "site": { "width": 70, "depth": 60, "north": 0 },
+    "defaults": { "floorHeight": 3.3 },
+    "enabled": { "base": true, "crown": true },
+    "towers": { "count": 1, "layout": "row", "spacing": 24, "bridge": { "enabled": false, "floor": 20, "floors": 2 } },
+    "base": {
+      "baseType": "podium",
+      "footprint": { "shape": "rect", "sides": 5, "width": 44, "depth": 34, "lockRatio": false, "armRatio": 0.4, "cornerRadius": 0, "chamfer": 0 },
+      "position": { "anchor": [0, 0], "offsetX": 0, "offsetY": 0, "rotation": 0, "gapBelow": 0 },
+      "height": { "floors": 4, "floorHeight": 4.5, "doubleGround": true },
+      "profile": { "taperX": 0, "taperY": 0, "twist": 0, "twistMode": "continuous", "bulge": 0, "lean": 0, "leanDir": 0, "curve": "linear" },
+      "division": { "segments": 1, "setback": 0, "staggerX": 0, "staggerY": 0, "pattern": "linear", "seed": 7, "voidEvery": 0, "voidFloors": 1, "cantilever": 0, "cantileverDir": 0 },
+      "language": { "use": "retail", "emphasis": "horizontal", "solidRatio": 0.3, "structure": "core" }
+    },
+    "body": {
+      "footprint": { "shape": "rect", "sides": 5, "width": 24, "depth": 24, "lockRatio": false, "armRatio": 0.4, "cornerRadius": 0, "chamfer": 0 },
+      "position": { "anchor": [0, 0], "offsetX": 0, "offsetY": 0, "rotation": 0, "gapBelow": 0 },
+      "height": { "floors": 30, "floorHeight": null, "doubleGround": false },
+      "profile": { "taperX": 0, "taperY": 0, "twist": 0, "twistMode": "continuous", "bulge": 0, "lean": 0, "leanDir": 0, "curve": "linear" },
+      "division": { "segments": 1, "setback": 0, "staggerX": 0, "staggerY": 0, "pattern": "linear", "seed": 7, "voidEvery": 0, "voidFloors": 1, "cantilever": 0, "cantileverDir": 0 },
+      "language": { "use": "residential", "emphasis": "vertical", "solidRatio": 0.4, "structure": "core" },
+      "segmentsList": [{ "kind": "solid", "overrides": {} }]
+    },
+    "crown": {
+      "crownType": "stepped",
+      "footprint": { "shape": "rect", "sides": 5, "width": 18, "depth": 18, "lockRatio": false, "armRatio": 0.4, "cornerRadius": 0, "chamfer": 0 },
+      "position": { "anchor": [0, 0], "offsetX": 0, "offsetY": 0, "rotation": 0, "gapBelow": 0 },
+      "height": { "floors": 3, "floorHeight": 4, "doubleGround": false },
+      "profile": { "taperX": 0, "taperY": 0, "twist": 0, "twistMode": "continuous", "bulge": 0, "lean": 0, "leanDir": 0, "curve": "linear" },
+      "division": { "segments": 3, "setback": 2, "staggerX": 0, "staggerY": 0, "pattern": "linear", "seed": 7, "voidEvery": 0, "voidFloors": 1, "cantilever": 0, "cantileverDir": 0 },
+      "language": { "use": "mechanical", "emphasis": "none", "solidRatio": 0.7, "structure": "core" }
+    }
+  },
+  "presets": [
+    {
+      "id": "tripartite",
+      "name": "משולש קלאסי",
+      "subtitle": "בסיס, גוף וכותרת מדורגת",
+      "patch": {}
+    },
+    {
+      "id": "podium-point",
+      "name": "פודיום ומגדל נקודתי",
+      "subtitle": "בסיס רחב בקו הרחוב ומגדל דק נסוג",
+      "patch": { "base.footprint.width": 60, "base.footprint.depth": 50, "body.footprint.width": 22, "body.footprint.depth": 22, "body.position.anchor": [0, 1], "body.height.floors": 36, "crown.crownType": "flat", "crown.height.floors": 1 }
+    },
+    {
+      "id": "tower-plaza",
+      "name": "מגדל בכיכר",
+      "subtitle": "ללא פודיום, מגדל נסוג מהרחוב (סוג Seagram)",
+      "patch": { "base.baseType": "plaza", "body.footprint.width": 44, "body.footprint.depth": 26, "body.position.offsetY": 10, "body.height.floors": 38, "crown.crownType": "screen", "crown.footprint.width": 44, "crown.footprint.depth": 26, "crown.height.floors": 2, "crown.division.segments": 1, "crown.division.setback": 0 }
+    },
+    {
+      "id": "stepped-setback",
+      "name": "נסיגות מדורגות",
+      "subtitle": "הגוש נסוג בכל מקטע",
+      "patch": { "body.footprint.width": 36, "body.footprint.depth": 30, "body.height.floors": 40, "body.division.segments": 4, "body.division.setback": 3, "crown.crownType": "spire", "crown.height.floors": 4, "crown.division.segments": 1, "crown.footprint.width": 10, "crown.footprint.depth": 10 }
+    },
+    {
+      "id": "stacked-boxes",
+      "name": "קופסאות מוזזות",
+      "subtitle": "ערימת מקטעים בהזזה אקראית מבוקרת",
+      "patch": { "body.height.floors": 42, "body.division.segments": 7, "body.division.staggerX": 5, "body.division.staggerY": 4, "body.division.pattern": "seeded", "body.division.seed": 11, "crown.crownType": "terminus", "crown.height.floors": 2, "crown.division.segments": 1 }
+    },
+    {
+      "id": "twisting",
+      "name": "מגדל מפותל",
+      "subtitle": "9 מקטעים, מחומש, פיתול 90° (סוג Turning Torso)",
+      "patch": { "enabled.base": false, "body.footprint.shape": "polygon", "body.footprint.sides": 5, "body.footprint.width": 26, "body.footprint.depth": 26, "body.height.floors": 45, "body.division.segments": 9, "body.profile.twist": 90, "body.profile.twistMode": "stepped", "crown.crownType": "terminus", "crown.height.floors": 1, "crown.division.segments": 1 }
+    },
+    {
+      "id": "twin-bridge",
+      "name": "תאומים עם גשר",
+      "subtitle": "שני מגדלים על בסיס משותף וגשר עליון",
+      "patch": { "base.footprint.width": 70, "base.footprint.depth": 36, "towers.count": 2, "towers.spacing": 34, "towers.bridge.enabled": true, "towers.bridge.floor": 24, "body.footprint.width": 20, "body.footprint.depth": 20, "body.height.floors": 32, "crown.crownType": "flat", "crown.height.floors": 1, "crown.division.segments": 1 }
+    },
+    {
+      "id": "tapered",
+      "name": "מגדל מוצר",
+      "subtitle": "הצרה רציפה ועקומה מואצת",
+      "patch": { "base.footprint.shape": "ellipse", "body.footprint.shape": "ellipse", "body.footprint.width": 32, "body.footprint.depth": 32, "body.height.floors": 50, "body.profile.taperX": 0.55, "body.profile.taperY": 0.55, "body.profile.curve": "easeIn", "crown.crownType": "mast", "crown.height.floors": 6, "crown.division.segments": 1 }
+    }
+  ]
+}

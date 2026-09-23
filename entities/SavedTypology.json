@@ -1,0 +1,11 @@
+{
+  "name": "SavedTypology",
+  "type": "object",
+  "properties": {
+    "name": { "type": "string", "description": "שם הטיפולוגיה" },
+    "subtitle": { "type": "string", "description": "תיאור בשורה אחת" },
+    "data": { "type": "object", "description": "מודל בניין מלא לשימוש חוזר" },
+    "thumbnail": { "type": "string" }
+  },
+  "required": ["name", "data"]
+}

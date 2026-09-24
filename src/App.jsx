@@ -11,11 +11,24 @@ const clone = (o) => JSON.parse(JSON.stringify(o));
 const fmt = (n) => new Intl.NumberFormat('he-IL').format(n);
 const USE_LABEL = { residential: 'מגורים', office: 'משרדים', hotel: 'מלון', retail: 'מסחר', public: 'ציבורי', mechanical: 'מערכות' };
 
+// Give every tower past the first its own complete masses, cloned once from the
+// current ones. After this each tower stands alone — no inheritance, no ripple.
+function withTowerMasses(data) {
+  const n = data.towers?.count ?? 1;
+  if (n <= 1) return data;
+  const masses = [...(data.towers.masses || [])];
+  for (let i = 1; i < n; i++) {
+    if (!masses[i]) masses[i] = { body: clone(data.body), crown: clone(data.crown) };
+  }
+  masses.length = n;
+  return setPath(data, 'towers.masses', masses);
+}
+
 function projectFromPreset(preset) {
   let data = clone(presetsFile.default);
   for (const [key, value] of Object.entries(preset.patch || {})) data = setPath(data, key, value);
   data.body = syncSegments(data.body);
-  return { id: newId(), name: preset.name, typology: preset.id, data };
+  return { id: newId(), name: preset.name, typology: preset.id, data: withTowerMasses(data) };
 }
 
 // The page always opens on a model: the last saved project, or the first typology.
@@ -69,8 +82,8 @@ export default function App() {
     history.current.future = [];
   };
 
-  // A change to body/crown while a tower other than the first is active is stored
-  // as that tower's override, so the towers stop being copies of each other.
+  // A change to body/crown while a tower other than the first is active is written
+  // into that tower's own masses. Towers never read from each other.
   const routesToTower = useCallback((path) =>
     activeTower > 0 && (path.startsWith('body.') || path.startsWith('crown.')),
   [activeTower]);
@@ -79,12 +92,15 @@ export default function App() {
     setProject((p) => {
       let data;
       if (routesToTower(path)) {
-        const list = [...(p.data.towers?.overrides || [])];
-        list[activeTower] = { ...(list[activeTower] || {}), [path]: value };
-        data = setPath(p.data, 'towers.overrides', list);
+        const base = `towers.masses.${activeTower}`;
+        data = setPath(p.data, `${base}.${path}`, value);
+        if (path === 'body.division.segments') {
+          data = setPath(data, `${base}.body`, syncSegments(data.towers.masses[activeTower].body));
+        }
       } else {
         data = setPath(p.data, path, value);
         if (path === 'body.division.segments') data = { ...data, body: syncSegments(data.body) };
+        if (path === 'towers.count') data = withTowerMasses(data);
       }
       pushHistory(p.data);
       return { ...p, data };
@@ -92,40 +108,40 @@ export default function App() {
     setDirty(true);
   }, [activeTower, routesToTower]);
 
-  const isTowerOverride = useCallback((path) =>
-    project.data.towers?.overrides?.[activeTower]?.[path] !== undefined,
-  [project, activeTower]);
-
-  const onRevertTower = useCallback((path) => {
+  // Explicit one-time copy — the replacement for inheritance. Nothing happens on its own.
+  const copyFromTower = useCallback((fromIndex) => {
+    if (fromIndex === activeTower) return;
     setProject((p) => {
-      const list = [...(p.data.towers?.overrides || [])];
-      const ov = { ...(list[activeTower] || {}) };
-      delete ov[path];
-      list[activeTower] = ov;
+      const src = towerProject(p.data, fromIndex);
       pushHistory(p.data);
-      return { ...p, data: setPath(p.data, 'towers.overrides', list) };
+      return { ...p, data: setPath(p.data, `towers.masses.${activeTower}`, {
+        body: clone(src.body), crown: clone(src.crown),
+      }) };
     });
     setDirty(true);
-  }, [activeTower]);
+    say(`מגדל ${fromIndex + 1} הועתק למגדל ${activeTower + 1}`);
+  }, [activeTower, say]);
+
+  // where a mass lives for the active tower — the base is always shared
+  const massPath = useCallback((mass) =>
+    (activeTower > 0 && mass !== 'base') ? `towers.masses.${activeTower}.${mass}` : mass,
+  [activeTower]);
 
   const onRevert = useCallback((mass, segIndex, key) => {
-    if (activeTower > 0 && mass !== 'base') {
-      onRevertTower(`${mass}.segmentsList.${segIndex}.overrides.${key}`);
-      return;
-    }
     setProject((p) => {
-      const list = [...p.data[mass].segmentsList];
+      const list = [...towerProject(p.data, activeTower)[mass].segmentsList];
       const overrides = { ...list[segIndex].overrides };
       delete overrides[key];
       list[segIndex] = { ...list[segIndex], overrides };
       pushHistory(p.data);
-      return { ...p, data: { ...p.data, [mass]: { ...p.data[mass], segmentsList: list } } };
+      return { ...p, data: setPath(p.data, `${massPath(mass)}.segmentsList`, list) };
     });
     setDirty(true);
-  }, [activeTower, onRevertTower]);
+  }, [activeTower, massPath]);
 
   const onSegmentAction = useCallback((action) => {
-    const list = [...project.data.body.segmentsList];
+    const activeBody = towerProject(project.data, activeTower).body;
+    const list = [...activeBody.segmentsList];
     const i = selectedSegment;
     if (action === 'duplicate') list.splice(i + 1, 0, clone(list[i]));
     else if (action === 'delete' && list.length > 1) list.splice(i, 1);
@@ -133,14 +149,14 @@ export default function App() {
     else if (action === 'down' && i < list.length - 1) [list[i + 1], list[i]] = [list[i], list[i + 1]];
     else return;
 
-    const body = { ...project.data.body, segmentsList: list, division: { ...project.data.body.division, segments: list.length } };
+    const body = { ...activeBody, segmentsList: list, division: { ...activeBody.division, segments: list.length } };
     pushHistory(project.data);
-    setProject({ ...project, data: { ...project.data, body } });
+    setProject({ ...project, data: setPath(project.data, massPath('body'), body) });
     setDirty(true);
     if (action === 'delete' || action === 'up') setSelectedSegment(Math.max(0, i - 1));
     else if (action === 'down') setSelectedSegment(Math.min(list.length - 1, i + 1));
     else setSelectedSegment(i + 1);
-  }, [project, selectedSegment]);
+  }, [project, selectedSegment, activeTower, massPath]);
 
   const undo = useCallback(() => {
     const h = history.current;
@@ -189,7 +205,8 @@ export default function App() {
   }, [towerCount, activeTower]);
 
   // ---------- loading a model into the page ----------
-  const load = (p, persist) => {
+  const load = (row, persist) => {
+    const p = { ...row, data: withTowerMasses(row.data) }; // older saves had no per-tower masses
     if (persist) {
       saveProject({ ...p, metrics: buildTower(p.data).metrics });
       setRows(listProjects());
@@ -324,7 +341,7 @@ export default function App() {
           <ParamPanel key={level} project={project.data} effective={effective} level={level}
             selectedMass={selectedMass} selectedSegment={selectedSegment}
             activeTower={activeTower} towerCount={towerCount} onSelectTower={setActiveTower}
-            isTowerOverride={isTowerOverride} onRevertTower={onRevertTower}
+            onCopyFromTower={copyFromTower}
             onChange={onChange} onEnterMass={enterMass} onEnterSegment={enterSegment} onUp={goUp}
             onSegmentAction={onSegmentAction} onRevert={onRevert} />
         </aside>

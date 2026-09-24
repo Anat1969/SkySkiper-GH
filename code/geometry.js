@@ -216,25 +216,18 @@ function crownVariant(crown) {
   return c;
 }
 
-// ---------- per-tower overrides ----------
-// towers.overrides[i] is a flat map of dotted paths, e.g. { 'body.height.floors': 52,
-// 'crown.crownType': 'spire' }. Tower 0 has none: it IS the source every other tower
-// inherits from. Same grammar as a segment's overrides, one level up.
+// ---------- independent towers ----------
+// towers.masses[i] holds a COMPLETE { body, crown } for tower i. Nothing is inherited:
+// each tower is its own building, so editing one never moves another. Index 0 is left
+// empty and reads project.body / project.crown, which keeps a single-tower project flat.
 export function towerProject(project, ti) {
-  const ov = project.towers?.overrides?.[ti];
-  if (!ov) return project;
-  const keys = Object.keys(ov);
-  if (!keys.length) return project;
   let p = project;
-  for (const k of keys) p = setPath(p, k, ov[k]);
+  const m = project.towers?.masses?.[ti];
+  if (m) p = { ...p, body: m.body || p.body, crown: m.crown || p.crown };
+  // projects saved before towers became independent carried sparse overrides
+  const legacy = project.towers?.overrides?.[ti];
+  if (legacy) for (const k of Object.keys(legacy)) p = setPath(p, k, legacy[k]);
   return p;
-}
-
-// The value a tower actually uses for a path, whether inherited or overridden.
-export function resolveTower(project, ti, path) {
-  const ov = project.towers?.overrides?.[ti];
-  if (ov && ov[path] !== undefined) return ov[path];
-  return getPath(project, path);
 }
 
 // ---------- building ----------

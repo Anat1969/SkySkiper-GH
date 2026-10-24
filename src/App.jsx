@@ -331,6 +331,7 @@ export default function App() {
           saveProject({ ...project, metrics: m });
           setRows(listProjects()); setSaved(true); setDirty(true); say('נשמר');
         }}>שמירה</button>
+        <ai-menu />
       </header>
 
       <div className="studio">

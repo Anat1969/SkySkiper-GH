@@ -11,3 +11,10 @@ The top bar holds only the app name (links home), content navigation, and ONE lo
 - `data/context-ashdod-rogozin.json`: בניינים ורחובות מ-OpenStreetMap במטרים, יחסית למרכז המגרש. בניינים שעל
   המגרש עצמו (70 על 60 מ') הוסרו. גובה משוער: 4 קומות, 12 מ', כי ב-OSM אין מספר קומות לבניינים כאן.
 - `code/TowerViewer.jsx`: prop `context`, מצויר בקבוצת הקרקע באותה מערכת צירים כמו המגדל.
+
+## הליכה ברחוב (03.11.2026, בבקשת ענת להרחיב את ההליכה בגובה העיניים)
+- כפתור "הליכה ברחוב" בשורת התצוגות: המגדל בין הבניינים של רוגוזין, בגובה **160** או **95** ס"מ, עם מפת תוכנית. "הרחוב היום" מול "עם המגדל".
+- `src/StreetWalk.jsx`: אותן קואורדינטות כמו `TowerViewer` (z = -y). קומה אחר קומה מ-`buildTower`, עם רווח דק בין הקומות. הבניינים סביב: 12 מ', ההנחה של ההקשר העירוני, כתובה במסך.
+- הרכיב המשותף `<space-walk>` מ-https://appofapp-gh.vercel.app/walk.js, ואם Vercel לא עונה, מ-Pages של AppOfApp-GH.
+- בדיקה: `npx vite preview --port 4175 & node tests/walk.e2e.mjs`.
+- ענפי `claude/*` לא נפרסים ב-Vercel (`vercel.json`).

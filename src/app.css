@@ -157,3 +157,10 @@ select { width: 100%; min-height: var(--touch); padding: 0 var(--space-2); borde
 .city-note strong { display: block; font-size: 14px; font-weight: 700; color: #1D2023; background: linear-gradient(transparent 55%, #F5E3A3 55%); width: fit-content; margin-bottom: 2px; }
 .city-note .city-more > span { display: block; margin-top: 2px; font-size: 11px; color: #8A939C; }
 @media (max-width: 640px) { .city-note { padding: 4px 8px; } .city-note .city-more { display: none; } .city-note strong { margin: 0; } }
+
+/* הליכה ברחוב: the tower among the real buildings, at eye height (shared <space-walk>) */
+.street-walk { position: absolute; inset: 52px 0 0 0; z-index: 1; display: block; height: auto;
+  --sw-height: 100%; --sw-ink: #1D2023; --sw-paper: #f4f2ee; --sw-card: #fff; --sw-line: #d9d4ca; --sw-muted: #6b7178;
+  --sw-accent: #1D2023; --sw-marker: #F5E3A3; }
+.overlay.walking { top: var(--space-2); bottom: auto; }
+@media (max-width: 900px) { .street-walk { position: relative; inset: auto; height: auto; } }

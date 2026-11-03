@@ -6,6 +6,7 @@ import presetsFile from '../data/presets.json';
 import ParamPanel from './ParamPanel.jsx';
 import MassSection from './MassSection.jsx';
 import Menu from './Menu.jsx';
+import StreetWalk from './StreetWalk.jsx';
 import { listProjects, listTypologies, saveProject, deleteProject, saveTypology, newId } from './store.js';
 
 const clone = (o) => JSON.parse(JSON.stringify(o));
@@ -359,13 +360,15 @@ export default function App() {
               if (level === 'mass' && mass === selectedMass && seg !== null) enterSegment(seg);
               else enterMass(mass);
             }} />
-          <div className="north">צפון ↑</div>
-          <div className="overlay">
+          {activeView === 'walk' && <StreetWalk project={project.data} context={CITY_CONTEXT} />}
+          {activeView !== 'walk' && <div className="north">צפון ↑</div>}
+          <div className={activeView === 'walk' ? 'overlay walking' : 'overlay'}>
             <div className="bar">
-              {[['axon', 'אקסונומטרי'], ['front', 'חזית'], ['side', 'צד'], ['top', 'מבט-על'], ['eye', 'גובה עין']].map(([v, l]) => (
-                <button key={v} className={activeView === v ? 'on' : ''} onClick={() => { viewerRef.current.setView(v); setActiveView(v); }}>{l}</button>
+              {[['axon', 'אקסונומטרי'], ['front', 'חזית'], ['side', 'צד'], ['top', 'מבט-על'], ['eye', 'גובה עין'], ['walk', 'הליכה ברחוב']].map(([v, l]) => (
+                <button key={v} className={activeView === v ? 'on' : ''} onClick={() => { if (v !== 'walk') viewerRef.current.setView(v); setActiveView(v); }}>{l}</button>
               ))}
             </div>
+            {activeView !== 'walk' && <>
             <div className="bar">
               <button onClick={() => viewerRef.current.zoom(0.8)}>הגדלה</button>
               <button onClick={() => viewerRef.current.zoom(1.25)}>הקטנה</button>
@@ -379,7 +382,8 @@ export default function App() {
               <button className={floorLines ? 'on' : ''} onClick={() => setFloorLines((f) => !f)}>קווי קומות</button>
               <button className={showCity ? 'on' : ''} onClick={() => setShowCity((c) => !c)} title="בניינים אמיתיים סביב המגרש, מ-OpenStreetMap">העיר מסביב</button>
             </div>
-            {showCity && (
+            </>}
+            {showCity && activeView !== 'walk' && (
               <div className="city-note">
                 <strong>גבוה פי {Math.round(m.height / 12)} מהבניינים סביבו.</strong>
                 <span className="city-more">

@@ -13,6 +13,7 @@ async function open(opts) {
   const ctx = await b.newContext(opts); const p = await ctx.newPage(); const errs = []
   p.on('pageerror', (e) => errs.push(e.message))
   await p.route('https://appofapp-gh.vercel.app/walk.js', (r) => r.fulfill({ contentType: 'text/javascript', body: readFileSync(`${AOA}/walk.js`) }))
+  await p.route('https://anat1969.github.io/AppOfApp-GH/walk.js', (r) => r.fulfill({ contentType: 'text/javascript', body: readFileSync(`${AOA}/walk.js`) }))
   await p.route('https://appofapp-gh.vercel.app/ai-menu.js', (r) => r.fulfill({ contentType: 'text/javascript', body: readFileSync(`${AOA}/ai-menu.js`) }))
   await p.goto(BASE + '/', { waitUntil: 'networkidle' })
   return { ctx, p, errs }

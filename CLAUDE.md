@@ -2,3 +2,12 @@
 
 ## A&I logo button
 The top bar holds only the app name (links home), content navigation, and ONE logo button "אד' ענת שטיבלמן A&I" (`<ai-menu>` from https://appofapp-gh.vercel.app/ai-menu.js). Every editing and development action (העתקת קישור, שיחת הפיתוח, פרויקט המחקר, התקנת האפליקציה, edit mode, add, delete) lives only inside it, never as loose buttons. Standard: https://github.com/Anat1969/AppOfApp-GH/blob/main/docs/ai-menu-standard.md
+
+## העיר מסביב (03.11.2026, בקשת ענת)
+
+דפוס "מהמפה למודל" מבנק ההשראה של Claude-GH, בגרסה של סטודיו המסות: המגדל עומד על מגרש אמיתי בין
+הבניינים של רחוב רוגוזין באשדוד, ולא על רשת ריקה. כפתור "העיר מסביב" (דלוק כברירת מחדל) ושורת תובנה "גבוה פי N
+מהבניינים סביבו".
+- `data/context-ashdod-rogozin.json`: בניינים ורחובות מ-OpenStreetMap במטרים, יחסית למרכז המגרש. בניינים שעל
+  המגרש עצמו (70 על 60 מ') הוסרו. גובה משוער: 4 קומות, 12 מ', כי ב-OSM אין מספר קומות לבניינים כאן.
+- `code/TowerViewer.jsx`: prop `context`, מצויר בקבוצת הקרקע באותה מערכת צירים כמו המגדל.

@@ -150,3 +150,10 @@ select { width: 100%; min-height: var(--touch); padding: 0 var(--space-2); borde
   .bar { overflow-x: auto; }
   .bar button { min-height: 28px; padding: 0 var(--space-2); font-size: 11px; white-space: nowrap; }
 }
+
+/* הערת ההקשר העירוני: מה רואים סביב המגדל, ומאיפה */
+.city-note { max-width: 320px; padding: 6px 10px; font-size: 12px; line-height: 1.45; background: rgba(255,255,255,.92); border: 1px solid #CFC8BC; color: #3a3f44; }
+.city-note b { color: #1D2023; }
+.city-note strong { display: block; font-size: 14px; font-weight: 700; color: #1D2023; background: linear-gradient(transparent 55%, #F5E3A3 55%); width: fit-content; margin-bottom: 2px; }
+.city-note .city-more > span { display: block; margin-top: 2px; font-size: 11px; color: #8A939C; }
+@media (max-width: 640px) { .city-note { padding: 4px 8px; } .city-note .city-more { display: none; } .city-note strong { margin: 0; } }

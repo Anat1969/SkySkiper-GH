@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import TowerViewer from '../code/TowerViewer.jsx';
+import CITY_CONTEXT from '../data/context-ashdod-rogozin.json';
 import { buildTower, setPath, syncSegments, towerProject } from '../code/geometry.js';
 import presetsFile from '../data/presets.json';
 import ParamPanel from './ParamPanel.jsx';
@@ -45,6 +46,8 @@ export default function App() {
   const [activeTower, setActiveTower] = useState(0);
   const [colorMode, setColorMode] = useState('mass');
   const [floorLines, setFloorLines] = useState(true);
+  // המגדל בתוך העיר: בניינים אמיתיים סביב המגרש, כדי לראות את קנה המידה מול השכונה
+  const [showCity, setShowCity] = useState(true);
   const [activeView, setActiveView] = useState('axon');
   const [toast, setToast] = useState('');
   const [rows, setRows] = useState(() => listProjects());
@@ -350,7 +353,7 @@ export default function App() {
         <div className="viewport">
           <TowerViewer ref={viewerRef} project={project.data} level={level} selectedMass={selectedMass}
             selectedSegment={selectedSegment} selectedTower={level === 'building' ? null : activeTower}
-            colorMode={colorMode} floorLines={floorLines}
+            colorMode={colorMode} floorLines={floorLines} context={showCity ? CITY_CONTEXT : null}
             onPick={(mass, seg, tower) => {
               if (tower != null && mass !== 'base') setActiveTower(tower);
               if (level === 'mass' && mass === selectedMass && seg !== null) enterSegment(seg);
@@ -374,7 +377,17 @@ export default function App() {
                 <button key={v} className={colorMode === v ? 'on' : ''} onClick={() => setColorMode(v)}>{l}</button>
               ))}
               <button className={floorLines ? 'on' : ''} onClick={() => setFloorLines((f) => !f)}>קווי קומות</button>
+              <button className={showCity ? 'on' : ''} onClick={() => setShowCity((c) => !c)} title="בניינים אמיתיים סביב המגרש, מ-OpenStreetMap">העיר מסביב</button>
             </div>
+            {showCity && (
+              <div className="city-note">
+                <strong>גבוה פי {Math.round(m.height / 12)} מהבניינים סביבו.</strong>
+                <span className="city-more">
+                  <b>המגדל בתוך העיר:</b> {CITY_CONTEXT.name}. {CITY_CONTEXT.heightNote}
+                  <span>{CITY_CONTEXT.source}</span>
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>

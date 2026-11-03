@@ -8,6 +8,7 @@
 //   colorMode      'mass' | 'use' | 'white'
 //   floorLines     boolean
 //   onPick(mass, segment)   called on double-click on a mass
+//   context        null | { buildings: [{points:[[x,y]], h}], roads: [[[x,y]]] } — real city around the site, meters
 // Ref methods: setView(name), zoom(factor), center(), reset(), snapshot() -> dataURL
 // View names: 'axon' | 'front' | 'side' | 'top' | 'eye'
 
@@ -22,7 +23,7 @@ const ACCENT = '#0F6E6E';
 const MUTED = '#D3D9DF';
 
 const TowerViewer = forwardRef(function TowerViewer(
-  { project, level = 'building', selectedMass = null, selectedSegment = null, selectedTower = null, colorMode = 'mass', floorLines = true, onPick },
+  { project, level = 'building', selectedMass = null, selectedSegment = null, selectedTower = null, colorMode = 'mass', floorLines = true, onPick, context = null },
   ref
 ) {
   const mountRef = useRef(null);
@@ -119,6 +120,25 @@ const TowerViewer = forwardRef(function TowerViewer(
     const grid = new THREE.GridHelper(Math.max(sw, sd) * 3, Math.round(Math.max(sw, sd) * 3 / 10), '#CFC8BC', '#E2DDD3');
     grid.position.y = -0.02; ground.add(grid);
 
+    // הקשר עירוני: בניינים אמיתיים מ-OpenStreetMap סביב המגרש, באותו קנה מידה (דפוס "מהמפה למודל")
+    if (context) {
+      const ctxMat = new THREE.MeshLambertMaterial({ color: '#DDD8CF' });
+      const ctxLine = new THREE.LineBasicMaterial({ color: '#6E6A63', transparent: true, opacity: 0.55 });
+      for (const b of context.buildings) {
+        const shape = new THREE.Shape(b.points.map(([x, y]) => new THREE.Vector2(x, y)));
+        const geo = new THREE.ExtrudeGeometry(shape, { depth: b.h, bevelEnabled: false });
+        geo.rotateX(-Math.PI / 2);
+        const mesh = new THREE.Mesh(geo, ctxMat);
+        mesh.castShadow = true; mesh.receiveShadow = true;
+        ground.add(mesh, new THREE.LineSegments(new THREE.EdgesGeometry(geo, 20), ctxLine));
+      }
+      const roadMat = new THREE.LineBasicMaterial({ color: '#A39C90' });
+      for (const r of context.roads || []) {
+        const pts = r.map(([x, y]) => new THREE.Vector3(x, 0.05, -y));
+        ground.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), roadMat));
+      }
+    }
+
     const { slabs } = buildTower(project);
     let maxZ = 0;
     for (const sl of slabs) {
@@ -159,7 +179,7 @@ const TowerViewer = forwardRef(function TowerViewer(
     controls.minDistance = 10;
     controls.maxDistance = Math.max(maxZ, sw, sd) * 6;
     if (!s.current.initialized) { setView('axon', true); s.current.initialized = true; }
-  }, [project, level, selectedMass, selectedSegment, selectedTower, colorMode, floorLines]);
+  }, [project, level, selectedMass, selectedSegment, selectedTower, colorMode, floorLines, context]);
 
   // frame the selected mass when entering it
   useEffect(() => {

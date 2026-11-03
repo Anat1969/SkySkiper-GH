@@ -6,10 +6,10 @@
     <title>סטודיו מסות — בנייה גבוהה</title>
     <meta name="description" content="כלי תלת-ממדי לפירוק מסת מגדל לבסיס, גוף וכותרת." />
     <script src="https://appofapp-gh.vercel.app/ai-menu.js"></script>
-    <script src="https://appofapp-gh.vercel.app/walk.js"></script>
+    <script src="https://anat1969.github.io/AppOfApp-GH/walk.js"></script>
     <script>
-      // same file from the portfolio's GitHub Pages, for days when Vercel is rate-limited
-      if (!customElements.get('space-walk')) document.write('<script src="https://anat1969.github.io/AppOfApp-GH/walk.js"><\/script>');
+      // walk.js comes from the portfolio's GitHub Pages first (it follows every merge to main, no Vercel quota); Vercel is the backup
+      if (!customElements.get('space-walk')) document.write('<script src="https://appofapp-gh.vercel.app/walk.js"><\/script>');
     </script>
   </head>
   <body>

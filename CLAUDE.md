@@ -18,3 +18,8 @@ The top bar holds only the app name (links home), content navigation, and ONE lo
 - הרכיב המשותף `<space-walk>` מ-https://appofapp-gh.vercel.app/walk.js, ואם Vercel לא עונה, מ-Pages של AppOfApp-GH.
 - בדיקה: `npx vite preview --port 4175 & node tests/walk.e2e.mjs`.
 - ענפי `claude/*` לא נפרסים ב-Vercel (`vercel.json`).
+
+## פתיחה מקישור (05.11.2026, בקשת ענת)
+- `#patch=<JSON>&name=<שם>`: המגדל נפתח מתוך הכתובת. ה-JSON הוא מפה של נתיבים מנוקדים לערכים, באותו פורמט כמו `patch` ב-`data/presets.json`, מעל `default`.
+- הצרכן הראשון: איזה תמהיל עדיף (https://tamhil-gh.vercel.app), כפתור "פתיחה בגורד שחקים" על כל תמהיל.
+- כתובת בלי `patch` נפתחת כמו קודם: הפרויקט השמור האחרון, או הטיפולוגיה הראשונה.

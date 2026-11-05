@@ -33,8 +33,25 @@ function projectFromPreset(preset) {
   return { id: newId(), name: preset.name, typology: preset.id, data: withTowerMasses(data) };
 }
 
-// The page always opens on a model: the last saved project, or the first typology.
+// Opening from another app: #patch=<JSON of dotted paths> (same format as presets.json) and an optional &name=.
+// Used by Tamhil-GH ("איזה תמהיל עדיף") to open the mix that holds the budget as a tower.
+function projectFromHash() {
+  try {
+    const q = new URLSearchParams(location.hash.replace(/^#/, ''));
+    const raw = q.get('patch');
+    if (!raw) return null;
+    const patch = JSON.parse(raw);
+    if (!patch || typeof patch !== 'object' || Array.isArray(patch)) return null;
+    return projectFromPreset({ id: 'tripartite', name: (q.get('name') || 'פרויקט מקושר').slice(0, 60), patch });
+  } catch {
+    return null;
+  }
+}
+
+// The page always opens on a model: a project sent in the address, the last saved project, or the first typology.
 function initialProject() {
+  const linked = projectFromHash();
+  if (linked) return linked;
   const saved = listProjects();
   return saved.length ? saved[0] : projectFromPreset(presetsFile.presets[0]);
 }
